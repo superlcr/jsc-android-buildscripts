@@ -64,6 +64,9 @@ JSC_PATCHSET=(
   # GC concurrent issue potential fix
   # https://trac.webkit.org/changeset/251307/webkit
   "jsc_fix_concurrent_gc_issue.patch"
+
+  "jsc_fix_signal_crash.patch"
+  "jsc_disable_concurrent_gc.patch"
 )
 
 if [[ "$I18N" = false ]]

@@ -1,0 +1,12 @@
+diff -aur target-org/webkit/Source/JavaScriptCore/runtime/Options.cpp target/webkit/Source/JavaScriptCore/runtime/Options.cpp
+--- target-org/webkit/Source/JavaScriptCore/runtime/Options.cpp	2021-06-05 18:57:05.000000000 +0800
++++ target/webkit/Source/JavaScriptCore/runtime/Options.cpp	2021-06-05 18:49:14.000000000 +0800
+@@ -412,7 +412,7 @@
+     Options::useFTLJIT() = false;
+ #endif
+
+-#if !CPU(X86_64) && !CPU(ARM64)
++#if !CPU(X86_64) && !CPU(ARM64) && !defined(CUSTOMIZE_REACT_NATIVE)
+     Options::useConcurrentGC() = false;
+ #endif
+

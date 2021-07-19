@@ -1,0 +1,52 @@
+diff -aur target-org/webkit/Source/WTF/wtf/posix/ThreadingPOSIX.cpp target/webkit/Source/WTF/wtf/posix/ThreadingPOSIX.cpp
+--- target-org/webkit/Source/WTF/wtf/posix/ThreadingPOSIX.cpp	2019-08-13 04:57:15.000000000 +0800
++++ target/webkit/Source/WTF/wtf/posix/ThreadingPOSIX.cpp	2020-08-19 13:05:13.000000000 +0800
+@@ -110,7 +110,11 @@
+ void Thread::signalHandlerSuspendResume(int, siginfo_t*, void* ucontext)
+ {
+     // Touching a global variable atomic types from signal handlers is allowed.
+-    Thread* thread = targetThread.load();
++    Thread* thread = targetThread.exchange(nullptr);
++
++    if (thread == nullptr) {
++        return;
++    }
+
+     if (thread->m_suspendCount) {
+         // This is signal handler invocation that is intended to be used to resume sigsuspend.
+@@ -327,15 +331,17 @@
+     return { };
+ #else
+     if (!m_suspendCount) {
+-        // Ideally, we would like to use pthread_sigqueue. It allows us to pass the argument to the signal handler.
+-        // But it can be used in a few platforms, like Linux.
+-        // Instead, we use Thread* stored in a global variable to pass it to the signal handler.
+-        targetThread.store(this);
+-
+         while (true) {
++            // Ideally, we would like to use pthread_sigqueue. It allows us to pass the argument to the signal handler.
++            // But it can be used in a few platforms, like Linux.
++            // Instead, we use Thread* stored in a global variable to pass it to the signal handler.
++            targetThread.store(this);
++
+             int result = pthread_kill(m_handle, SigThreadSuspendResume);
+-            if (result)
++            if (result) {
++                targetThread.store(nullptr);
+                 return makeUnexpected(result);
++            }
+             globalSemaphoreForSuspendResume->wait();
+             if (m_platformRegisters)
+                 break;
+@@ -365,8 +371,10 @@
+         // 3. Use thread's flag.
+         // In this implementaiton, we take (3). m_suspendCount is used to distinguish it.
+         targetThread.store(this);
+-        if (pthread_kill(m_handle, SigThreadSuspendResume) == ESRCH)
++        if (pthread_kill(m_handle, SigThreadSuspendResume) == ESRCH) {
++            targetThread.store(nullptr);
+             return;
++        }
+         globalSemaphoreForSuspendResume->wait();
+     }
+     --m_suspendCount;
